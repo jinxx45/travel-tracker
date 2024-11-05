@@ -1,11 +1,13 @@
 import Titlebar from "./components/ui/titlebar";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import MapComponent from "./components/ui/MapComponent";
+import DescriptionComponent from "./components/ui/DescriptionComponent";
 
 interface myFootPrintsType {
   locationName: string;
@@ -25,6 +27,35 @@ const App = () => {
   const [myFootPrints, setMyFootPrints] = useState<myFootPrintsType[]>([]);
   const [savedLocations, setSavedLocations] = useState<myFootPrintsType[]>([]);
   const [geoInvitations, setGeoInvitations] = useState<geoInvitationType[]>([]);
+
+  const [selectedLocationTitle, setSelectedLocationTitle] = useState("");
+  const [currentDescription, setCurrentDescription] = useState("");
+  const [currentCoordinates, setCurrentCoordinates] = useState("");
+
+  useEffect(() => {
+    const fetchLocations = async () => {
+      try {
+        const response = await fetch("api/footprints/getAllMyFootPrints", {
+          method: "POST", // Specify the POST method
+          headers: {
+            "Content-Type": "application/json", // Indicate the content type
+          },
+          body: JSON.stringify({ type: null }), // Include the body, here 'type' can be null
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch locations from server");
+        }
+
+        const data = await response.json();
+        console.log(data); // Handle the fetched data
+      } catch (error) {
+        console.error("Error fetching locations:", error);
+      }
+    };
+
+    fetchLocations();
+  }, []);
 
   return (
     <div className="app-container ">
@@ -59,8 +90,8 @@ const App = () => {
                     <AccordionTrigger>Geo Invitations</AccordionTrigger>
                     <AccordionContent>
                       <ul>
-                        <li>Dave's House</li>
-                        <li>Badminton Court</li>
+                        <li>Dan's Birthday Party</li>
+                        <li>Graheeth's Bachelors Party</li>
                       </ul>
                     </AccordionContent>
                   </AccordionItem>
@@ -68,7 +99,13 @@ const App = () => {
               </div>
             </div>
           </div>
-          <div className="w-full md:w-2/3">Column 2</div>
+          <div className="w-full md:w-2/3">
+            <DescriptionComponent
+              selectedLocation="Chennai"
+              description="Chennai is a great place where my office is located"
+            />
+            <MapComponent />
+          </div>
         </div>
       </div>
     </div>
