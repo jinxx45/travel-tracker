@@ -14,6 +14,7 @@ interface myFootPrintsType {
   locationDescription: string;
   geolocation: string;
   rating: number;
+  type: string;
 }
 
 interface geoInvitationType {
@@ -35,20 +36,42 @@ const App = () => {
   useEffect(() => {
     const fetchLocations = async () => {
       try {
-        const response = await fetch("api/footprints/getAllMyFootPrints", {
-          method: "POST", // Specify the POST method
-          headers: {
-            "Content-Type": "application/json", // Indicate the content type
-          },
-          body: JSON.stringify({ type: null }), // Include the body, here 'type' can be null
+        // Create an array of promises for the API calls
+        const promises = [
+          fetch("api/footprints/getAllMyFootPrints", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ type: null }),
+          }),
+          fetch("api/geoInvitations/getAllGeoInvitations", {
+            // Updated endpoint for geo invitations
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+            },
+          }),
+        ];
+
+        // Use Promise.all to wait for all the promises to resolve
+        const responses = await Promise.all(promises);
+
+        // Check if both responses are OK
+        responses.forEach((response, index) => {
+          if (!response.ok) {
+            throw new Error(`Failed to fetch from API at index ${index}`);
+          }
         });
 
-        if (!response.ok) {
-          throw new Error("Failed to fetch locations from server");
-        }
+        // Parse the JSON from both responses
+        const [locations, geoInvitationsData] = await Promise.all(
+          responses.map((response) => response.json())
+        );
 
-        const data = await response.json();
-        console.log(data); // Handle the fetched data
+        // Handle the fetched data
+        handleFetchedLocations(locations);
+        setGeoInvitations(geoInvitationsData);
       } catch (error) {
         console.error("Error fetching locations:", error);
       }
@@ -56,6 +79,28 @@ const App = () => {
 
     fetchLocations();
   }, []);
+
+  const handleFetchedLocations = (locations: myFootPrintsType[]) => {
+    // Process the data as needed
+    console.log(locations);
+    const saved: myFootPrintsType[] = [];
+    const footprints: myFootPrintsType[] = [];
+
+    locations.forEach((item: myFootPrintsType) => {
+      switch (item.type) {
+        case "savedLocation":
+          saved.push(item);
+          break;
+        case "myFootPrint":
+          footprints.push(item);
+          break;
+        default:
+          throw new Error("Type is invalid. Please contact support");
+      }
+    });
+    setSavedLocations(saved);
+    setMyFootPrints(footprints);
+  };
 
   return (
     <div className="app-container ">
@@ -72,8 +117,9 @@ const App = () => {
                     <AccordionTrigger>My Footprints</AccordionTrigger>
                     <AccordionContent>
                       <ul>
-                        <li>Chennai</li>
-                        <li>Bangalore</li>
+                        {myFootPrints.map((item: myFootPrintsType) => {
+                          return <li>{item.locationName}</li>;
+                        })}
                       </ul>
                     </AccordionContent>
                   </AccordionItem>
@@ -81,8 +127,9 @@ const App = () => {
                     <AccordionTrigger>Saved Locations</AccordionTrigger>
                     <AccordionContent>
                       <ul>
-                        <li>Dave's House</li>
-                        <li>Badminton Court</li>
+                        {savedLocations.map((item: myFootPrintsType) => {
+                          return <li>{item.locationName}</li>;
+                        })}
                       </ul>
                     </AccordionContent>
                   </AccordionItem>
@@ -90,8 +137,9 @@ const App = () => {
                     <AccordionTrigger>Geo Invitations</AccordionTrigger>
                     <AccordionContent>
                       <ul>
-                        <li>Dan's Birthday Party</li>
-                        <li>Graheeth's Bachelors Party</li>
+                        {geoInvitations.map((item: geoInvitationType) => {
+                          return <li>{item.invitationDescription}</li>;
+                        })}
                       </ul>
                     </AccordionContent>
                   </AccordionItem>
